@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.login.exemplo.dto.UsuarioRequestDTO;
 import com.login.exemplo.entity.Usuario;
 import com.login.exemplo.repositories.UsuarioRepository;
+
+import jakarta.validation.Valid;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -22,8 +26,8 @@ public class UsuarioController {
 	UsuarioRepository usuarioRepository;
 	
 	@PostMapping(value = "usuario/cadastro")
-	public ResponseEntity <Usuario> saveUser(@RequestBody Usuario user) {
-		Usuario usuario = new Usuario(user.getNome(), user.getEmail(), user.getPassword());
+	public ResponseEntity <Usuario> saveUser(@Valid @RequestBody UsuarioRequestDTO user) {
+		Usuario usuario = new Usuario(user.getName(), user.getEmail(), user.getPassword());
 		usuarioRepository.save(usuario);
 		return ResponseEntity.ok(usuario);
 	}
