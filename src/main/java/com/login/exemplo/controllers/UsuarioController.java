@@ -13,68 +13,60 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.login.exemplo.dto.UsuarioRequestDTO;
+import com.login.exemplo.dto.UsuarioResponseDTO;
 import com.login.exemplo.entity.Usuario;
-import com.login.exemplo.repositories.UsuarioRepository;
+import com.login.exemploService.UsuarioService;
 
 import jakarta.validation.Valid;
 
 @RestController
 @CrossOrigin(origins = "*")
 public class UsuarioController {
-	
-	@Autowired
-	UsuarioRepository usuarioRepository;
-	
-	@PostMapping(value = "usuario/cadastro")
-	public ResponseEntity <Usuario> saveUser(@Valid @RequestBody UsuarioRequestDTO user) {
-		Usuario usuario = new Usuario(user.getName(), user.getEmail(), user.getPassword());
-		usuarioRepository.save(usuario);
-		return ResponseEntity.ok(usuario);
-	}
-	
-	@PostMapping(value = "login")
-	public ResponseEntity <?> login(@RequestBody Usuario user) {	
-		
-		Usuario findUser = usuarioRepository.findByEmail(user.getEmail());
-		if (findUser == null) {
-			return ResponseEntity.ok("Usuário não encontrado");
-		}else {
-			if (findUser.getPassword().equals(user.getPassword())) {
-				return ResponseEntity.ok("Login realizado com sucesso");
-		} else {
-				return ResponseEntity.ok("Senha incorreta");
-			}
-		}
-	}
-	
-	@GetMapping(value = "/usuario/listar")
-	public ResponseEntity<?> listarUsuarios() {
-		return ResponseEntity.ok(usuarioRepository.findAll());
-	}
-	
-	
-	@DeleteMapping("/{id}")
-	public ResponseEntity<?> deletar(@PathVariable Integer id) {
-		if(usuarioRepository.existsById(id)) {
-			usuarioRepository.deleteById(id);
-			return ResponseEntity.status(HttpStatus.OK).body("Excluido com sucesso"); //204
-		} else {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Esse Id não existe"); //404
-		}
-	}
-	
-	@PutMapping("/{id}")
-	public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody Usuario user) {
-		if(usuarioRepository.existsById(id)) {
-			Usuario usuarioAtualizado = usuarioRepository.findById(id).get();
-			usuarioAtualizado.setNome(user.getNome());
-			usuarioAtualizado.setEmail(user.getEmail());
-			usuarioAtualizado.setPassword(user.getPassword());
-			usuarioRepository.save(usuarioAtualizado);
-			return ResponseEntity.status(HttpStatus.OK).body(usuarioAtualizado); //200
-		} else {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Esse Id não existe"); //404
-		}
-	}
+
+    @Autowired
+    UsuarioService usuarioService;
+
+    @PostMapping(value = "usuario/cadastro")
+    public ResponseEntity<?> saveUser(@Valid @RequestBody UsuarioRequestDTO user) {
+        try {
+            UsuarioResponseDTO saved = usuarioService.saveUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "login")
+    public ResponseEntity<?> login(@RequestBody UsuarioRequestDTO user) {
+        String result = usuarioService.login(user);
+        if ("Login realizado com sucesso".equals(result)) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+
+    @GetMapping(value = "usuarios")
+    public ResponseEntity<?> listarUsuarios() {
+        return ResponseEntity.ok(usuarioService.listarUsuarios());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletar(@PathVariable Integer id) {
+        String result = usuarioService.deletar1(id);
+        if ("Excluido com sucesso".equals(result)) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody UsuarioRequestDTO user) {
+        try {
+            Usuario updated = usuarioService.atualizar(id, user);
+            return ResponseEntity.status(HttpStatus.OK).body(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
 
 }
